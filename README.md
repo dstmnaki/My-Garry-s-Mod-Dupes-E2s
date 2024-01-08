@@ -1,6 +1,7 @@
 Hello, i am naki. This repo includes some of my dupes and e2s i've made in the past years.
 I thought it would be a good idea to share them as i am leaving gmod.
 
+
 Required addons:
 
 [Wiremod](https://steamcommunity.com/sharedfiles/filedetails/?id=160250458)
@@ -18,6 +19,7 @@ Required addons:
 These *should* be all the needed addons!
 
 
+
 Links:
 
 [Youtube](https://www.youtube.com/@N4ki)
@@ -27,6 +29,7 @@ Links:
 [DeviantArt](https://www.deviantart.com/nakkitsunami)
 
 [Darkstorm's Website](https://darkstorm.cc/)
+
 
 Disclaimer:
 All of this content is made by me, you can share it, preferably by giving a link to this github repo, no need to credit me but don't claim these creations as yours bc that is not nice.
