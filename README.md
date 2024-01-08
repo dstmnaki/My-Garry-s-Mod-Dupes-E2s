@@ -16,6 +16,9 @@ Required addons:
 
 [ACF2 (Github, Power Armor's minigun will only work on Darkstorm sandbox)](https://github.com/nrlulz/ACF)
 
+Also the basilisk uses a custom thermal and requires my port of avp 2010 visions, you can toggle it by pressing mouse 4 or 5, can't remember sadly
+[AVP2010 - Texturize Materials](https://steamcommunity.com/sharedfiles/filedetails/?id=2956665051)
+
 These *should* be all the needed addons!
 
 
