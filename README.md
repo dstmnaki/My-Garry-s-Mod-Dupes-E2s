@@ -6,7 +6,7 @@ Required addons:
 
 [Wiremod](https://steamcommunity.com/sharedfiles/filedetails/?id=160250458)
 
-[StarfallEX](https://github.com/thegrb93/StarfallEx)
+[StarfallEX (Github)](https://github.com/thegrb93/StarfallEx)
 
 [SProps](https://steamcommunity.com/sharedfiles/filedetails/?id=173482196)
 
@@ -14,7 +14,7 @@ Required addons:
 
 [some sort of visual clipping addon (proper clip should work)](https://steamcommunity.com/sharedfiles/filedetails/?id=2256491552)
 
-[ACF2 (Power Armor's minigun will only work on Darkstorm sandbox)](https://github.com/nrlulz/ACF)
+[ACF2 (Github, Power Armor's minigun will only work on Darkstorm sandbox)](https://github.com/nrlulz/ACF)
 
 These *should* be all the needed addons!
 
