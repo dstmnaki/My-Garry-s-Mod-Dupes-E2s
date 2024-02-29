@@ -2,9 +2,9 @@
 @inputs ZMIn ZMOut [CamAng]:angle CamAimPos:vector [Seat Base Pelvis LHip RHip LThigh RThigh LFoot RFoot]:entity
 @inputs [LFootLFToe LFootRFToe LFootLBToe LFootRBToe RFootLFToe RFootRFToe RFootLBToe RFootRBToe]:entity
 @inputs [Gun_Right Gun_Left Gun_Right_Ent Gun_Left_Ent]:entity
-@outputs ReloadExtra1 FireExtra1 Cam_Hold:angle ZMState CamFOV CamFilter:array Active CamDist TP [CamPos LFoot_Pos RFoot_Pos TargetPos]:vector FireLeft FireRight
+@outputs ReloadExtra1 FireExtra1 Cam_Hold:angle ZMState CamFOV CamFilter:array Active CamDist TP [CamPos LFoot_Pos RFoot_Pos TargetPos]:vector FireLeft FireRight BoostPowerVal
 @persist TargetVal Target:entity TargetType XAng ZAng ThirdPerson Aimlock [CamAimPosF TargetPos]:vector Freelook ZMState AimMode YawCustom BaseFOV FOV:array CamFOV CamFilter:array Speed_Fix [Scale Offset FP_CamPos TP_CamPos RSave LSave]:vector Length_A Length_B Length_C Leg_Width Leg_Stand_Width Leg_Forward_Offset Run_Multiplier Run_Distance_Multiplier Height Step_Height Mass Step_Lerp Step Step_Distance Move_Speed Step_Speed Jump_Force On_Ground TP_CamDist TP [Cam_Hold]:angle Jump
-@persist StepHeightFix Edit Debug WalkOverWrite RunOverWrite LeftLegStepVal RightLegStepVal
+@persist StepHeightFix Edit Debug WalkOverWrite RunOverWrite LeftLegStepVal RightLegStepVal BoostPowerVal
 @persist GunPos:vector
 #@trigger none
 #with love, ClockEFFX, thanks for the original base, Naki
@@ -35,7 +35,7 @@ if(first()|dupefinished()){
     FOV[1,number]=0
     FOV[2,number]=BaseFOV*0.6
     FOV[3,number]=BaseFOV*0.2
-    
+    BoostPowerVal=1
     #Debug/Editing
     Debug=0
     WalkOverWrite=0
@@ -370,26 +370,6 @@ if(first()|dupefinished()){
         }
     }
     
-    if(changed(Space)){
-        if(Space&!Jump&((XAng+ZAng/2)==0)){
-            if(On_Ground){
-                ZForce=((Jump_Force*0.6))
-            }else{
-                ZForce=0
-            }
-            if(On_Ground){
-                if((!clamp(A+D,0,1)&AimMode)|!AimMode){
-                    Base:propSetVelocity(Base:vel()+vec(0,0,(Jump_Force*(0.1+(0.1*(A|D))))+ZForce*3)+((((holoEntity(1):forward()*Jump_Force)*(W-S))+((holoEntity(1):right()*Jump_Force)*((D-A)*!AimMode)))*2))
-                    Jump=1
-                    Base:soundPlay("jump_sound",0.5,"npc/dog/dog_pneumatic2.wav")
-                    soundPitch("jump_sound",100)
-                    timer("unjump",250*1+((clamp(W+A+S+D,0,1)==0)*2))
-                    XAng=100*(W-S)
-                    ZAng=100*(D-A)
-                }
-            }
-        }
-    }
     if(changed(ThirdPerson)){
         if(ThirdPerson){
             CamPos=TP_CamPos
@@ -406,8 +386,8 @@ if(first()|dupefinished()){
     }
     local Ground_Ranger=rangerOffsetHull(((Height)*1.5),Base:toWorld(vec(0,0,0)),vec(0,0,-1),vec(Leg_Width/2,Leg_Width/2,0))
     local Distance=Ground_Ranger:distance()+Offset:z()
-    On_Ground=Ground_Ranger:hit()
-    local Movement_Direction=(((holoEntity(1):forward()*(W-S))+(holoEntity(1):right()*((D-A)*!AimMode)))*vec(1,1,0)):normalized()*On_Ground
+    On_Ground=Ground_Ranger:hit()*(!Space|BoostPowerVal==0)
+    local Movement_Direction=(((holoEntity(1):forward()*(W-S))+(holoEntity(1):right()*((D-A)*!AimMode)))*vec(1,1,0)):normalized()*(On_Ground|Space)
     local Moving=abs(Movement_Direction:length())>0.1
     if(!AimMode){
         HoloBaseAng=approachAngle(holoEntity(1):angles(),Base:toWorld(ang(-10*!Active*!Edit,-3*sin((Step_Lerp+0.5)*(Step-!Step)*Moving*180),-(2*(A-D)*!AimMode)-4*sin(Step_Lerp*(Step-!Step)*Moving*180))),7)
@@ -426,11 +406,21 @@ if(first()|dupefinished()){
     if(changed(On_Ground)){
         Base:propGravity(!On_Ground)
     }
-    if(!Jump){
+    if(On_Ground){
+        BoostPowerVal+=0.01*!Space
+    }else{
+        BoostPowerVal-=0.005*Space
+    }
+    BoostPowerVal=clamp(BoostPowerVal,0,1)
+    if(!Space){
         local Stand_Force=(vec(0,0,((Height_Adj)*1.1)-Distance)*4)*On_Ground
         local Damping_Force=(-Base:vel()*vec(0.35,0.35,0.5)*vec((0.02+(On_Ground*0.9)),(0.02+(On_Ground*0.9)),(0.05+(On_Ground*0.95))))
         local Move_Force=((Movement_Direction)*Move_Speed)*((1-Speed_Fix)+((Shift*Run_Multiplier)*2))
         Base:applyForce(((Ground_Ranger:entity():vel()*vec(0.5,0.5,0.25))+Stand_Force+Damping_Force+Move_Force)*Mass)
+    }else{
+        local Damping_Force=(-Base:vel()*vec(0.35,0.35,0.5)*vec(0.3))
+        local Move_Force=((Movement_Direction)*Move_Speed/4)*((1-Speed_Fix)+((Shift*Run_Multiplier)*2))
+        Base:applyForce((vec(0,0,2+(90*BoostPowerVal))+Damping_Force+Move_Force)*Mass)
     }
     
     #-- misc
@@ -464,7 +454,7 @@ if(first()|dupefinished()){
     #-- pelvis
     Step_Lerp+=(Step_Speed)*(1+(Shift*Run_Multiplier))
     if(Step_Lerp>1){
-        if(Moving){
+        if(Moving&(!Space|(BoostPowerVal==0&On_Ground))){
             Step_Lerp=0
             Step=!Step
         }
@@ -593,10 +583,6 @@ if(first()|dupefinished()){
     }elseif(ZAng<0){
         ZAng+=10
     }
-}else{
-if(clk("unjump")){
-    Jump=0
-}
 }
 if(changed(~ZMIn)&ZMIn){
     if(ZMState<FOV:count()-1){
