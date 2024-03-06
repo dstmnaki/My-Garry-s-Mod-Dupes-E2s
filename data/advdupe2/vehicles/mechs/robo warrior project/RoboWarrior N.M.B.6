@@ -2,7 +2,7 @@
 @inputs ZMIn ZMOut [CamAng]:angle CamAimPos:vector [Seat Base Pelvis LHip RHip LThigh RThigh LFoot RFoot]:entity
 @inputs [LFootLFToe LFootRFToe LFootLBToe LFootRBToe RFootLFToe RFootRFToe RFootLBToe RFootRBToe]:entity
 @inputs [Gun_Right Gun_Left Gun_Right_Ent Gun_Left_Ent]:entity
-@outputs ReloadExtra1 FireExtra1 Cam_Hold:angle ZMState CamFOV CamFilter:array Active CamDist TP [CamPos LFoot_Pos RFoot_Pos TargetPos]:vector FireLeft FireRight BoostPowerVal
+@outputs Space ReloadExtra1 FireExtra1 Cam_Hold:angle ZMState CamFOV CamFilter:array Active CamDist TP [CamPos LFoot_Pos RFoot_Pos TargetPos]:vector FireLeft FireRight BoostPowerVal
 @persist TargetVal Target:entity TargetType XAng ZAng ThirdPerson Aimlock [CamAimPosF TargetPos]:vector Freelook ZMState AimMode YawCustom BaseFOV FOV:array CamFOV CamFilter:array Speed_Fix [Scale Offset FP_CamPos TP_CamPos RSave LSave]:vector Length_A Length_B Length_C Leg_Width Leg_Stand_Width Leg_Forward_Offset Run_Multiplier Run_Distance_Multiplier Height Step_Height Mass Step_Lerp Step Step_Distance Move_Speed Step_Speed Jump_Force On_Ground TP_CamDist TP [Cam_Hold]:angle Jump
 @persist StepHeightFix Edit Debug WalkOverWrite RunOverWrite LeftLegStepVal RightLegStepVal BoostPowerVal
 @persist GunPos:vector
@@ -336,18 +336,18 @@ if(first()|dupefinished()){
 }elseif(clk("update")){
     timer("update",50)
     
-    W = Seat:driver():keyForward()+(WalkOverWrite*Debug)
+    W = Seat:driver():keyForward()
     A = Seat:driver():keyLeft()
     S = Seat:driver():keyBack()
     D = Seat:driver():keyRight()
-    Shift = 1#(Seat:driver():keySprint()+(RunOverWrite*Debug))
+    Shift = 1#(Seat:driver():keySprint()
     Space = Seat:driver():keyJump()
     Duck = Seat:driver():keyDuck()
     R = Seat:driver():keyReload()
     Alt = Seat:driver():keyWalk()
     
     AllPartsOK=Base&Pelvis&Seat&RHip&LHip&LFoot&RFoot&LThigh&RThigh
-    Active = (Seat:driver():isPlayer()+(Debug))*AllPartsOK
+    Active = Seat:driver():isPlayer()*AllPartsOK
     
     FireLeft = Seat:driver():keyAttack1()
     FireRight = Seat:driver():keyAttack2()
@@ -390,14 +390,14 @@ if(first()|dupefinished()){
     local Movement_Direction=(((holoEntity(1):forward()*(W-S))+(holoEntity(1):right()*((D-A)*!AimMode)))*vec(1,1,0)):normalized()*(On_Ground|Space)
     local Moving=abs(Movement_Direction:length())>0.1
     if(!AimMode){
-        HoloBaseAng=approachAngle(holoEntity(1):angles(),Base:toWorld(ang(-10*!Active*!Edit,-3*sin((Step_Lerp+0.5)*(Step-!Step)*Moving*180),-(2*(A-D)*!AimMode)-4*sin(Step_Lerp*(Step-!Step)*Moving*180))),7)
+        HoloBaseAng=approachAngle(holoEntity(1):angles(),(ang(0,-3*sin((Step_Lerp+0.5)*(Step-!Step)*Moving*180),-4*sin(Step_Lerp*(Step-!Step)*Moving*180))):rotateAroundAxis(vec(0,0,1),Base:angles():yaw()),7)
         YawCustom=Base:angles():yaw()
     }else{
         if(!Active){
             AimMode=0
         }
         YawCustom+=5*(A-D)
-        HoloBaseAng=approachAngle(holoEntity(1):angles(),Base:toWorld(ang(0,0,-(2*(A-D)*!AimMode)-4*sin(Step_Lerp*(Step-!Step)*Moving*180))):setYaw(YawCustom-3*sin((Step_Lerp+0.5)*(Step-!Step)*Moving*180)),7)
+        HoloBaseAng=approachAngle(holoEntity(1):angles(),(ang(0,0,-(2*(A-D)*!AimMode)-4*sin(Step_Lerp*(Step-!Step)*Moving*180))):setYaw(YawCustom-3*sin((Step_Lerp+0.5)*(Step-!Step)*Moving*180)),7)
     }
     
     holoAng(1,HoloBaseAng)
@@ -412,6 +412,15 @@ if(first()|dupefinished()){
         BoostPowerVal-=0.005*Space
     }
     BoostPowerVal=clamp(BoostPowerVal,0,1)
+    
+    if(changed(Space)){
+        if(Space){
+            Base:soundPlay("sfx",0,"^thrusters/Rocket02.wav")
+        }else{
+            soundStop("sfx")
+        }
+    }
+    soundPitch("sfx",clamp(10+BoostPowerVal*90,10,100))
     if(!Space){
         local Stand_Force=(vec(0,0,((Height_Adj)*1.1)-Distance)*4)*On_Ground
         local Damping_Force=(-Base:vel()*vec(0.35,0.35,0.5)*vec((0.02+(On_Ground*0.9)),(0.02+(On_Ground*0.9)),(0.05+(On_Ground*0.95))))
@@ -439,7 +448,7 @@ if(first()|dupefinished()){
             Cam_Hold=Cam_Hold2
         }
     }
-    local Upright_Force=(-(Base:angles()-ang((10*!Active*!Edit)+clamp((20*(XAng/100)),-45,35),Cam_Hold:yaw()*!Edit,clamp((16*(ZAng/100))+(-Base:velL():y()*(0.0032*((A|D)*(1+Shift)))),-15,15))):rotateAroundAxis(vec(1,0,0),1*sin((Step_Lerp+0.25)*(Step-!Step)*Moving*180))*ang(1,1,1))*50
+    local Upright_Force=Base:toLocal(ang((10*!Active*!Edit)+clamp((20*(XAng/100))+clamp(CamAng:pitch()*0.75,-25,35),-25,15),Cam_Hold:yaw(),1*sin((Step_Lerp+0.25)*(Step-!Step)*Moving*180)+clamp((16*(ZAng/100))+(-Base:velL():y()*(0.0032*((A|D)))),-15,15)))*50
     local Ang_Damping_Force=(-Base:angVel())*10
     
     Base:applyAngForce((Upright_Force+Ang_Damping_Force)*Mass)
